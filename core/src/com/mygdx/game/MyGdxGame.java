@@ -1,8 +1,6 @@
 package com.mygdx.game;
 
-import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
+import com.badlogic.gdx.*;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -14,47 +12,48 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
-public class MyGdxGame extends ApplicationAdapter {
+public class MyGdxGame extends InputAdapter implements ApplicationListener {
     private static final float SCENE_WIDTH = 1024f;
     private static final float SCENE_HEIGHT = 576f;
 
     private SpriteBatch batch;
-    private Texture image;
-    private ShaderProgram shader;
     private OrthographicCamera camera;
     private Viewport viewport;
-    private float[] resolution = new float[2];
+    private Gui gui;
+
+    private Texture image;
+    private ShaderProgram shader;
 
     private boolean shaderEnable;
     private Vector3 touchPos = new Vector3();
 
-    private float radius = 0.25f;
-    private float softness = 0.2f;
-    private float darkness = 0.95f;
+    private float[] resolution = new float[2];
+    private float radius;
+    private float softness;
+    private float darkness;
 
     @Override
     public void create() {
         image = new Texture("image.png");
         batch = new SpriteBatch();
-        shader = new ShaderProgram(
-                Gdx.files.internal("shaders/myshader4.vert"),
-                Gdx.files.internal("shaders/myshader4.frag"));
-        if (!shader.isCompiled()) {
-            Gdx.app.error("Couldn't load shader: ", shader.getLog());
-        }
-
-        shader.begin();
-        shader.setUniformf("sceneRatio", SCENE_WIDTH / SCENE_HEIGHT);
-        shader.setUniformf("radius", radius);
-        shader.setUniformf("softness", softness);
-        shader.setUniformf("darkness", darkness);
-        shader.end();
-
         camera = new OrthographicCamera();
         viewport = new FitViewport(SCENE_WIDTH, SCENE_HEIGHT, camera);
 
         camera.position.x = image.getWidth() * 0.5f;
         camera.position.y = image.getHeight() * 0.5f;
+
+        Gdx.input.setInputProcessor(this);
+
+        gui = new Gui();
+
+        shader = new ShaderProgram(
+                Gdx.files.internal("shaders/myshader.vert"),
+                Gdx.files.internal("shaders/myshader.frag"));
+        if (!shader.isCompiled()) {
+            Gdx.app.error("Couldn't load shader: ", shader.getLog());
+        }
+
+        initUniform();
     }
 
     @Override
@@ -62,7 +61,7 @@ public class MyGdxGame extends ApplicationAdapter {
         Gdx.gl.glClearColor(0.2f, 0.2f, 0.2f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        handleInput();
+        gui.update();
 
         camera.update();
         batch.setProjectionMatrix(camera.combined);
@@ -78,47 +77,89 @@ public class MyGdxGame extends ApplicationAdapter {
         }
         batch.draw(image, 0, 0);
         batch.end();
+
+        gui.draw();
     }
 
-    private void handleInput() {
-        final float change = Gdx.graphics.getDeltaTime() * 0.25f;
+    @Override
+    public boolean scrolled(int amount) {
+        if (amount > 0) {
+            addRadius(0.05f);
+        } else {
+            addRadius(-0.05f);
+        }
+        return true;
+    }
 
-        if (Gdx.input.isTouched()) {
-            radius += change;
+    @Override
+    public boolean keyDown(int keycode) {
+        switch (keycode) {
+            case Input.Keys.SPACE:
+                shaderEnable = !shaderEnable;
+                if (shaderEnable) {
+                    batch.setShader(shader);
+                    gui.addMessage("เปิด shader", 2f);
+                } else {
+                    batch.setShader(null);
+                    gui.addMessage("ปิด shader", 2f);
+                }
+                break;
+            case Input.Keys.W:
+                addDarkness(0.02f);
+                break;
+            case Input.Keys.S:
+                addDarkness(-0.02f);
+                break;
+            case Input.Keys.D:
+                addSoftness(0.05f);
+                break;
+            case Input.Keys.A:
+                addSoftness(-0.05f);
+                break;
+            case Input.Keys.ENTER:
+                initUniform();
+                gui.addMessage("reset เป็นค่าเริ่มต้น", 2f);
+                break;
+            default:
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
-            darkness += change;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-            darkness -= change;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            softness += change;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            softness -= change;
-        }
+        return true;
+    }
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
-            shaderEnable = !shaderEnable;
-            if (shaderEnable) {
-                batch.setShader(shader);
-            } else {
-                batch.setShader(null);
-            }
-        }
+    private void addRadius(float value) {
+        radius = MathUtils.clamp(radius + value, 0.20f, 1f);
+        updateUniform("radius", radius);
+        gui.addMessage(String.format("radius: %.2f", radius), 2f);
+    }
 
-        if (Gdx.input.isKeyPressed(Input.Keys.ANY_KEY) || Gdx.input.isTouched()) {
-            radius = Math.max(0.20f, radius % 1f);
-            darkness = MathUtils.clamp(darkness, 0.5f, 1f);
-            softness = MathUtils.clamp(softness, 0.01f, 1f);
+    private void addSoftness(float value) {
+        softness = MathUtils.clamp(softness + value, 0.05f, 1f);
+        updateUniform("softness", softness);
+        gui.addMessage(String.format("softness: %.2f", softness), 2f);
+    }
 
-            shader.begin();
-            shader.setUniformf("radius", radius);
-            shader.setUniformf("softness", softness);
-            shader.setUniformf("darkness", darkness);
-            shader.end();
-        }
+    private void addDarkness(float value) {
+        darkness = MathUtils.clamp(darkness + value, 0.80f, 1f);
+        updateUniform("darkness", darkness);
+        gui.addMessage(String.format("darkness: %.2f", darkness), 2f);
+    }
+
+    private void updateUniform(String name, float value) {
+        shader.begin();
+        shader.setUniformf(name, value);
+        shader.end();
+    }
+
+    private void initUniform() {
+        radius = 0.25f;
+        softness = 0.20f;
+        darkness = 0.94f;
+
+        shader.begin();
+        shader.setUniformf("sceneRatio", SCENE_WIDTH / SCENE_HEIGHT);
+        shader.setUniformf("radius", radius);
+        shader.setUniformf("softness", softness);
+        shader.setUniformf("darkness", darkness);
+        shader.end();
     }
 
     @Override
@@ -130,13 +171,25 @@ public class MyGdxGame extends ApplicationAdapter {
         shader.begin();
         shader.setUniformf("resolution", width, height);
         shader.end();
+
+        gui.resize(width, height);
     }
 
     @Override
     public void dispose() {
         batch.dispose();
         shader.dispose();
+        gui.dispose();
     }
 
+    @Override
+    public void pause() {
+        // no need to do anything
+    }
+
+    @Override
+    public void resume() {
+        // no need to do anything
+    }
 }
 
