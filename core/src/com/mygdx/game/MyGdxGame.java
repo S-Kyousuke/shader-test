@@ -11,6 +11,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.mygdx.game.utils.Formatter;
 
 public class MyGdxGame extends InputAdapter implements ApplicationListener {
     private static final float SCENE_WIDTH = 1024f;
@@ -118,7 +119,7 @@ public class MyGdxGame extends InputAdapter implements ApplicationListener {
                 break;
             case Input.Keys.ENTER:
                 initUniform();
-                gui.addMessage("reset เป็นค่าเริ่มต้น", 2f);
+                gui.addMessage("รีเซตเป็นค่าเริ่มต้น", 2f);
                 break;
             default:
         }
@@ -128,19 +129,19 @@ public class MyGdxGame extends InputAdapter implements ApplicationListener {
     private void addRadius(float value) {
         radius = MathUtils.clamp(radius + value, 0.20f, 1f);
         updateUniform("radius", radius);
-        gui.addMessage(String.format("radius: %.2f", radius), 2f);
+        gui.addMessage("รัศมี: " + Formatter.decimal(radius, 2), 2f);
     }
 
     private void addSoftness(float value) {
         softness = MathUtils.clamp(softness + value, 0.05f, 1f);
         updateUniform("softness", softness);
-        gui.addMessage(String.format("softness: %.2f", softness), 2f);
+        gui.addMessage("ความนุ่ม: " + Formatter.decimal(softness, 2), 2f);
     }
 
     private void addDarkness(float value) {
         darkness = MathUtils.clamp(darkness + value, 0.80f, 1f);
         updateUniform("darkness", darkness);
-        gui.addMessage(String.format("darkness: %.2f", darkness), 2f);
+        gui.addMessage("ความมืด: " + Formatter.decimal(darkness, 2), 2f);
     }
 
     private void updateUniform(String name, float value) {

@@ -1,8 +1,12 @@
 #ifdef GL_ES
+#define LOW lowp
+#define MED mediump
+#define HIGH highp
 precision mediump float;
-precision mediump int;
 #else
-#define highp;
+#define MED
+#define LOW
+#define HIGH
 #endif
 
 uniform sampler2D u_texture;
@@ -35,6 +39,6 @@ void main() {
 
 float getScale(float ratio) {
     float ratioMultiplier = ratio / sceneRatio;
-    return mix(ratioMultiplier, 1, step(1, ratioMultiplier));
+    return mix(ratioMultiplier, 1.0, step(1.0, ratioMultiplier));
 }
 
