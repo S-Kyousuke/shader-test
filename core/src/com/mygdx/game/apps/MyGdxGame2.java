@@ -1,6 +1,9 @@
-package com.mygdx.game;
+package com.mygdx.game.apps;
 
-import com.badlogic.gdx.*;
+import com.badlogic.gdx.ApplicationListener;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -11,9 +14,10 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.mygdx.game.Gui;
 import com.mygdx.game.utils.Formatter;
 
-public class MyGdxGame extends InputAdapter implements ApplicationListener {
+public class MyGdxGame2 extends InputAdapter implements ApplicationListener {
     private static final float SCENE_WIDTH = 1024f;
     private static final float SCENE_HEIGHT = 576f;
 
@@ -23,9 +27,11 @@ public class MyGdxGame extends InputAdapter implements ApplicationListener {
     private Gui gui;
 
     private Texture image;
+    private Texture image2;
     private ShaderProgram shader;
 
-    private boolean shaderEnable;
+    private boolean shaderEnable = true;
+    private boolean imageEnable = true;
     private Vector3 touchPos = new Vector3();
 
     private float[] resolution = new float[2];
@@ -36,6 +42,11 @@ public class MyGdxGame extends InputAdapter implements ApplicationListener {
     @Override
     public void create() {
         image = new Texture("image.png");
+        image.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+
+        image2 = new Texture("image2.png");
+        image2.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+
         batch = new SpriteBatch();
         camera = new OrthographicCamera();
         viewport = new FitViewport(SCENE_WIDTH, SCENE_HEIGHT, camera);
@@ -48,11 +59,12 @@ public class MyGdxGame extends InputAdapter implements ApplicationListener {
         gui = new Gui();
 
         shader = new ShaderProgram(
-                Gdx.files.internal("shaders/myshader.vert"),
-                Gdx.files.internal("shaders/myshader.frag"));
+                Gdx.files.internal("shaders/myshader2.vert"),
+                Gdx.files.internal("shaders/myshader2.frag"));
         if (!shader.isCompiled()) {
             Gdx.app.error("Couldn't load shader: ", shader.getLog());
         }
+        batch.setShader(shader);
 
         initUniform();
     }
@@ -68,6 +80,11 @@ public class MyGdxGame extends InputAdapter implements ApplicationListener {
         batch.setProjectionMatrix(camera.combined);
 
         batch.begin();
+        ShaderProgram currentShader = batch.getShader();
+        batch.setShader(null);
+        batch.draw(image2, 0, 0);
+        batch.flush();
+        batch.setShader(currentShader);
         if (shaderEnable) {
             touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             camera.unproject(touchPos);
@@ -76,7 +93,8 @@ public class MyGdxGame extends InputAdapter implements ApplicationListener {
             float v = touchPos.y / resolution[1];
             shader.setUniformf("position", new Vector2(u, v));
         }
-        batch.draw(image, 0, 0);
+        if (imageEnable)
+            batch.draw(image, 0, 0);
         batch.end();
 
         gui.draw();
@@ -122,6 +140,19 @@ public class MyGdxGame extends InputAdapter implements ApplicationListener {
                 gui.addMessage("รีเซตเป็นค่าเริ่มต้น", 2f);
                 break;
             default:
+        }
+        return true;
+    }
+
+    @Override
+    public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+        if (button == 0) {
+            imageEnable = !imageEnable;
+            if (imageEnable) {
+                gui.addMessage("เปิด-ภาพด้านหน้า", 2f);
+            } else{
+                gui.addMessage("ปิด-ภาพด้านหน้า", 2f);
+            }
         }
         return true;
     }
