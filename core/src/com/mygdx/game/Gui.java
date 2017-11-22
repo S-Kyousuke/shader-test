@@ -8,18 +8,24 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
 
 import static com.badlogic.gdx.scenes.scene2d.actions.Actions.*;
 
 
 public class Gui implements Disposable {
+    private static final float SCENE_WIDTH = 1024f;
+    private static final float SCENE_HEIGHT = 576f;
 
     private Stage stage;
+    private Viewport stageViewport;
     private BitmapFont font;
     private Array<Label> labels;
 
     public Gui() {
-        stage = new Stage();
+        stageViewport = new FitViewport(SCENE_WIDTH, SCENE_HEIGHT);
+        stage = new Stage(stageViewport);
         font = new BitmapFont(Gdx.files.internal("thai.fnt"));
         labels = new Array<Label>();
     }
@@ -57,7 +63,7 @@ public class Gui implements Disposable {
     }
 
     public void resize(int width, int height) {
-        stage.getViewport().update(width, height);
+        stageViewport.update(width, height);
     }
 
     @Override
